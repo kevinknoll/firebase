@@ -92,6 +92,30 @@
           });
         }
 
+        function loginWithPass (email, password) {
+          return auth.$signInWithEmailAndPassword(email, password).then(function (result) {
+            var exists = false;
+
+            angular.forEach(users, function (u) {
+              if (u.uid === result.uid) {
+                exists = true;
+              }
+            });
+
+            if (!exists) {
+              users.$add({
+                uid: result.uid,
+                provider: 'email',
+                email: result.email
+              });
+            }
+
+            user.data = result;
+          }).catch(function (err) {
+            // TODO: handle error
+          });
+        };
+
         function logout () {
           // TODO: log user out instead of deleting (so user id doesn't change)
           return auth.$deleteUser().then(function () {
@@ -102,6 +126,7 @@
         return {
           getUsers: getUsers,
           getUser: getUser,
+          loginWithPass: loginWithPass,
           login: login,
           logout: logout
         };
@@ -113,8 +138,16 @@
       function (UserService) {
         var t = this;
 
+        t.login = {
+          email: '',
+          password: ''
+        };
         t.user = UserService.getUser();
         t.users = UserService.getUsers();
+
+        t.loginWithPass = function () {
+          UserService.loginWithPass(t.login.email, t.login.password);
+        };
 
         t.login = function (provider) {
           UserService.login(provider);
@@ -234,6 +267,16 @@
       <button type="button" ng-click="user.login('twitter')">Login w/ Twitter</button>
     </p>
     <button type="button" ng-click="user.logout()" ng-show="user.user.data.user.uid">Logout</button>
+
+    <form ng-submit="user.loginWithPass()">
+    <label>
+      Email: <input type="text" ng-model="user.login.email">
+      </label>
+      <label>
+      Password: <input type="password" ng-model="user.login.password">
+      </label>
+      <button type="submit">Login</button>
+    </form>
 
     <h1>Users</h1>
     <ul>
