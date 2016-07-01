@@ -66,8 +66,8 @@
           return user;
         }
 
-        function login () {
-          return auth.$signInWithPopup('google').then(function (result) {
+        function login (provider) {
+          return auth.$signInWithPopup(provider).then(function (result) {
             var exists = false;
 
             angular.forEach(users, function (u) {
@@ -115,8 +115,8 @@
         t.user = UserService.getUser();
         t.users = UserService.getUsers();
 
-        t.login = function () {
-          UserService.login();
+        t.login = function (provider) {
+          UserService.login(provider);
         };
 
         t.logout = function () {
@@ -164,7 +164,10 @@
 <body>
   <div ng-controller="UserController as user">
     Logged in as: {{ user.user.data.user.email }}
-    <button type="button" ng-click="user.login()" ng-hide="user.user.data.user.uid">Login</button>
+    <p ng-hide="user.user.data.user.uid">
+      <button type="button" ng-click="user.login('google')">Login w/ Google</button>
+      <button type="button" ng-click="user.login('facebook')">Login w/ Facebook</button>
+    </p>
     <button type="button" ng-click="user.logout()" ng-show="user.user.data.user.uid">Logout</button>
 
     <h1>Users</h1>
