@@ -12,6 +12,10 @@
     }
     .pr { float: right; }
 
+    html {
+      font-family: sans-serif;
+    }
+
     .todos {
       border: 1px solid #ccc;
       padding-left: 0;
@@ -23,6 +27,12 @@
     }
     .todo:nth-child(even) {
       background: #ddd;
+    }
+    .todo label {
+      display: block;
+    }
+    .author {
+      font-size: 0.8em;
     }
   </style>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
@@ -90,19 +100,27 @@
     ])
 
     .controller('ListController', [
-      '$firebaseArray',
-      function ($firebaseArray) {
+      '$firebaseArray', 'UserService',
+      function ($firebaseArray, UserService) {
         var t = this;
         var db = firebase.database().ref().child('items');
+        var user = UserService.getUser();
 
         t.items = $firebaseArray(db);
         t.newItem = {
           text: '',
-          isComplete: false
+          isComplete: false,
+          userId: null
         };
 
         t.addItem = function () {
-          t.items.$add(angular.copy(t.newItem));
+          var uid = null;
+
+          if (user && user.data && user.data.user && user.data.user.uid) {
+            uid = user.data.user.uid;
+          }
+
+          t.items.$add(angular.extend(angular.copy(t.newItem), { userId: uid }));
           t.newItem.text = '';
         };
 
@@ -127,11 +145,12 @@
     <h1>ToDos</h1>
     <ul class="todos">
       <li class="todo cf" ng-repeat="item in list.items">
+        <button class="pr" ng-click="list.removeItem(item);">x</button>
         <label>
           <input type="checkbox" ng-model="item.isComplete" ng-click="list.updateItem(item);">
           {{ item.text }}
         </label>
-        <button class="pr" ng-click="list.removeItem(item);">x</button>
+        <i class="author">By: {{ item.userId }}</i>
       </li>
     </ul>
     <form ng-submit="list.addItem();">
