@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html ng-app="app">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title></title>
   <style>
     .cf:after {
@@ -36,6 +38,30 @@
 
     angular.module('app', ['firebase'])
 
+    .controller('UserController', [
+      '$firebaseAuth',
+      function ($firebaseAuth) {
+        var t = this;
+        var auth = $firebaseAuth();
+
+        t.user = auth.$getAuth();
+
+        t.login = function () {
+          auth.$signInWithPopup('google').then(function (user) {
+            t.user = user;
+          }).catch(function (err) {
+            // TODO: handle error
+          });
+        };
+
+        t.logout = function () {
+          auth.$deleteUser().then(function () {
+            t.user = null;
+          });
+        };
+      }
+    ])
+
     .controller('ListController', [
       '$firebaseArray',
       function ($firebaseArray) {
@@ -64,23 +90,30 @@
     ]);
   </script>
 </head>
-<body ng-controller="ListController as list">
-  <h1>ToDos</h1>
-  <ul class="todos">
-    <li class="todo cf" ng-repeat="item in list.items">
+<body>
+  <div ng-controller="UserController as user">
+    Logged in as: {{ user.user.user.email }}
+    <button type="button" ng-click="user.login()" ng-hide="user.user">Login</button>
+    <button type="button" ng-click="user.logout()" ng-show="user.user">Logout</button>
+  </div>
+  <div ng-controller="ListController as list">
+    <h1>ToDos</h1>
+    <ul class="todos">
+      <li class="todo cf" ng-repeat="item in list.items">
+        <label>
+          <input type="checkbox" ng-model="item.isComplete" ng-click="list.updateItem(item);">
+          {{ item.text }}
+        </label>
+        <button class="pr" ng-click="list.removeItem(item);">x</button>
+      </li>
+    </ul>
+    <form ng-submit="list.addItem();">
       <label>
-        <input type="checkbox" ng-model="item.isComplete" ng-click="list.updateItem(item);">
-        {{ item.text }}
+        New Item:
+        <input type="text" ng-model="list.newItem.text">
       </label>
-      <button class="pr" ng-click="list.removeItem(item);">x</button>
-    </li>
-  </ul>
-  <form ng-submit="list.addItem();">
-    <label>
-      New Item:
-      <input type="text" ng-model="list.newItem.text">
-    </label>
-    <button type="submit">Add</button>
-  </form>
+      <button type="submit">Add</button>
+    </form>
+  </div>
 </body>
 </html>
