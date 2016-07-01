@@ -79,6 +79,7 @@
             if (!exists) {
               users.$add({
                 uid: result.user.uid,
+                provider: provider,
                 email: result.user.email,
                 displayName: result.user.displayName,
                 photoURL: result.user.photoURL
