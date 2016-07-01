@@ -49,12 +49,18 @@
     angular.module('app', ['firebase'])
 
     .service('UserService', [
-      '$firebaseAuth',
-      function ($firebaseAuth) {
+      '$firebaseAuth', '$firebaseArray',
+      function ($firebaseAuth, $firebaseArray) {
         var auth = $firebaseAuth();
+        var db = firebase.database().ref().child('users');
+        var users = $firebaseArray(db);
         var user = {
           data: auth.$getAuth()
         };
+
+        function getUsers () {
+          return users;
+        }
 
         function getUser () {
           return user;
@@ -62,6 +68,23 @@
 
         function login () {
           return auth.$signInWithPopup('google').then(function (result) {
+            var exists = false;
+
+            angular.forEach(users, function (u) {
+              if (u.uid === result.user.uid) {
+                exists = true;
+              }
+            });
+
+            if (!exists) {
+              users.$add({
+                uid: result.user.uid,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                photoURL: result.user.photoURL
+              });
+            }
+
             user.data = result;
           }).catch(function (err) {
             // TODO: handle error
@@ -76,6 +99,7 @@
         }
 
         return {
+          getUsers: getUsers,
           getUser: getUser,
           login: login,
           logout: logout
@@ -89,6 +113,7 @@
         var t = this;
 
         t.user = UserService.getUser();
+        t.users = UserService.getUsers();
 
         t.login = function () {
           UserService.login();
@@ -141,6 +166,15 @@
     Logged in as: {{ user.user.data.user.email }}
     <button type="button" ng-click="user.login()" ng-hide="user.user.data.user.uid">Login</button>
     <button type="button" ng-click="user.logout()" ng-show="user.user.data.user.uid">Logout</button>
+
+    <h1>Users</h1>
+    <ul>
+      <li ng-repeat="user in user.users">
+        <img ng-src="{{ user.photoURL }}">
+        <span>{{ user.displayName }}</span>
+        <span>{{ user.email }}</span>
+      </li>
+    </ul>
   </div>
   <div ng-controller="ListController as list">
     <h1>ToDos</h1>
