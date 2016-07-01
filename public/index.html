@@ -38,26 +38,53 @@
 
     angular.module('app', ['firebase'])
 
-    .controller('UserController', [
+    .service('UserService', [
       '$firebaseAuth',
       function ($firebaseAuth) {
-        var t = this;
         var auth = $firebaseAuth();
+        var user = {
+          data: auth.$getAuth()
+        };
 
-        t.user = auth.$getAuth();
+        function getUser () {
+          return user;
+        }
 
-        t.login = function () {
-          auth.$signInWithPopup('google').then(function (user) {
-            t.user = user;
+        function login () {
+          return auth.$signInWithPopup('google').then(function (result) {
+            user.data = result;
           }).catch(function (err) {
             // TODO: handle error
           });
+        }
+
+        function logout () {
+          return auth.$deleteUser().then(function () {
+            user.data = null;
+          });
+        }
+
+        return {
+          getUser: getUser,
+          login: login,
+          logout: logout
+        };
+      }
+    ])
+
+    .controller('UserController', [
+      'UserService',
+      function (UserService) {
+        var t = this;
+
+        t.user = UserService.getUser();
+
+        t.login = function () {
+          UserService.login();
         };
 
         t.logout = function () {
-          auth.$deleteUser().then(function () {
-            t.user = null;
-          });
+          UserService.logout();
         };
       }
     ])
@@ -92,9 +119,9 @@
 </head>
 <body>
   <div ng-controller="UserController as user">
-    Logged in as: {{ user.user.user.email }}
-    <button type="button" ng-click="user.login()" ng-hide="user.user">Login</button>
-    <button type="button" ng-click="user.logout()" ng-show="user.user">Logout</button>
+    Logged in as: {{ user.user.data.user.email }}
+    <button type="button" ng-click="user.login()" ng-hide="user.user.data.user.uid">Login</button>
+    <button type="button" ng-click="user.logout()" ng-show="user.user.data.user.uid">Logout</button>
   </div>
   <div ng-controller="ListController as list">
     <h1>ToDos</h1>
