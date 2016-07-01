@@ -92,29 +92,43 @@
           });
         }
 
+        function handleLoginWithEmailAndPassword (user) {
+          var exists = false;
+
+          angular.forEach(users, function (u) {
+            if (u.uid === user.uid) {
+              exists = true;
+            }
+          });
+
+          if (!exists) {
+            users.$add({
+              uid: user.uid,
+              provider: 'email',
+              email: user.email
+            });
+          }
+
+          user.data = user;
+        }
+
+        function register (email, password) {
+          return auth.$createUserWithEmailAndPassword(email, password).then(function (result) {
+            handleLoginWithEmailAndPassword(result);
+          }).catch(function(err) {
+            // TODO: handle error
+            console.log(err);
+          });
+        }
+
         function loginWithPass (email, password) {
           return auth.$signInWithEmailAndPassword(email, password).then(function (result) {
-            var exists = false;
-
-            angular.forEach(users, function (u) {
-              if (u.uid === result.uid) {
-                exists = true;
-              }
-            });
-
-            if (!exists) {
-              users.$add({
-                uid: result.uid,
-                provider: 'email',
-                email: result.email
-              });
-            }
-
-            user.data = result;
+            handleLoginWithEmailAndPassword(result);
           }).catch(function (err) {
             // TODO: handle error
+            console.log(err);
           });
-        };
+        }
 
         function logout () {
           // TODO: log user out instead of deleting (so user id doesn't change)
@@ -126,6 +140,7 @@
         return {
           getUsers: getUsers,
           getUser: getUser,
+          register: register,
           loginWithPass: loginWithPass,
           login: login,
           logout: logout
@@ -138,12 +153,20 @@
       function (UserService) {
         var t = this;
 
+        t.register = {
+          email: '',
+          password: ''
+        };
         t.login = {
           email: '',
           password: ''
         };
         t.user = UserService.getUser();
         t.users = UserService.getUsers();
+
+        t.register = function () {
+          UserService.register(t.register.email, t.register.password);
+        };
 
         t.loginWithPass = function () {
           UserService.loginWithPass(t.login.email, t.login.password);
@@ -268,12 +291,24 @@
     </p>
     <button type="button" ng-click="user.logout()" ng-show="user.user.data.user.uid">Logout</button>
 
-    <form ng-submit="user.loginWithPass()">
-    <label>
-      Email: <input type="text" ng-model="user.login.email">
+    <form ng-submit="user.register()">
+      <h3>Register</h3>
+      <label>
+        Email: <input type="text" ng-model="user.register.email">
       </label>
       <label>
-      Password: <input type="password" ng-model="user.login.password">
+        Password: <input type="password" ng-model="user.register.password">
+      </label>
+      <button type="submit">Register</button>
+    </form>
+
+    <form ng-submit="user.loginWithPass()">
+      <h3>Login</h3>
+      <label>
+        Email: <input type="text" ng-model="user.login.email">
+      </label>
+      <label>
+        Password: <input type="password" ng-model="user.login.password">
       </label>
       <button type="submit">Login</button>
     </form>
