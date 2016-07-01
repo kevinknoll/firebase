@@ -43,7 +43,7 @@
       apiKey: "AIzaSyBKkYxHtbCIjX42hnkxg_SFB8MkSRiDf04",
       authDomain: "fir-4bba5.firebaseapp.com",
       databaseURL: "https://fir-4bba5.firebaseio.com",
-      storageBucket: "",
+      storageBucket: "gs://fir-4bba5.appspot.com",
     });
 
     angular.module('app', ['firebase'])
@@ -159,6 +159,69 @@
           t.items.$remove(item);
         };
       }
+    ])
+
+    .directive('fileSelect', [
+      function () {
+        return {
+          restrict: 'A',
+          scope: {
+            file: '=fileSelect'
+          },
+          link: function ($scope, el) {
+            el.bind('change', function (e) {
+              var f = (e.srcElement || e.target).files[0];
+              $scope.$apply(function () {
+                $scope.file.data = f;
+              });
+            });
+          }
+        };
+      }
+    ])
+
+    .controller('FileController', [
+      '$scope', '$firebaseArray', 'UserService',
+      function ($scope, $firebaseArray, UserService) {
+        var t = this;
+        var storage = firebase.storage().ref();
+        var db = firebase.database().ref().child('files');
+        var user = UserService.getUser();
+
+        t.items = $firebaseArray(db);
+        t.newItem = {
+          data: null,
+          isUploading: false,
+          progress: 0,
+          userId: null
+        };
+
+        t.addItem = function () {
+          var uid = null;
+          var filename = new Date().getTime();
+          var uploader;
+
+          if (user && user.data && user.data.user && user.data.user.uid) {
+            uid = user.data.user.uid;
+          }
+
+          t.newItem.isUploading = true;
+          uploader = storage.child('images/' + filename).put(t.newItem.data);
+          uploader.on('state_changed', function (snapshot) {
+            $scope.$apply(function () {
+              t.newItem.progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            });
+          }, function (err) {
+            t.newItem.isUploading = false;
+          }, function () {
+            // Upload completed successfully, now we can get the download URL
+            t.items.$add({ downloadURL: uploader.snapshot.downloadURL, userId: uid });
+            t.newItem.data = null;
+            t.newItem.isUploading = false;
+            t.newItem.progress = 0;
+          });
+        };
+      }
     ]);
   </script>
 </head>
@@ -199,6 +262,22 @@
         <input type="text" ng-model="list.newItem.text">
       </label>
       <button type="submit">Add</button>
+    </form>
+  </div>
+  <div ng-controller="FileController as file">
+    <h1>Files</h1>
+    <ul class="todos">
+      <li class="todo cf" ng-repeat="item in file.items">
+        <img ng-src="{{ item.downloadURL }}" width="100">
+      </li>
+    </ul>
+    <form ng-submit="file.addItem();">
+      <label>
+        New File:
+        <input type="file" file-select="file.newItem" ng-disabled="file.newItem.isUploading">
+      </label>
+      <button type="submit" ng-disabled="!file.newItem.data || file.newItem.isUploading">Upload</button>
+      <progress ng-attr-value="{{ file.newItem.progress }}" max="100">{{ file.newItem.progress }}</progress>
     </form>
   </div>
 </body>
