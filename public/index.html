@@ -24,26 +24,41 @@
     }
   </style>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase.js"></script>
+  <script src="https://cdn.firebase.com/libs/angularfire/2.0.1/angularfire.min.js"></script>
   <script>
-    angular.module('app', [])
+    firebase.initializeApp({
+      apiKey: "AIzaSyBKkYxHtbCIjX42hnkxg_SFB8MkSRiDf04",
+      authDomain: "fir-4bba5.firebaseapp.com",
+      databaseURL: "https://fir-4bba5.firebaseio.com",
+      storageBucket: "",
+    });
+
+    angular.module('app', ['firebase'])
 
     .controller('ListController', [
-      function () {
+      '$firebaseArray',
+      function ($firebaseArray) {
         var t = this;
+        var db = firebase.database().ref().child('items');
 
-        t.items = [];
+        t.items = $firebaseArray(db);
         t.newItem = {
           text: '',
           isComplete: false
         };
 
         t.addItem = function () {
-          t.items.push(angular.copy(t.newItem));
+          t.items.$add(angular.copy(t.newItem));
           t.newItem.text = '';
         };
 
+        t.updateItem = function (item) {
+          t.items.$save(item);
+        };
+
         t.removeItem = function (item) {
-          t.items.splice(t.items.indexOf(item), 1);
+          t.items.$remove(item);
         };
       }
     ]);
@@ -54,7 +69,7 @@
   <ul class="todos">
     <li class="todo cf" ng-repeat="item in list.items">
       <label>
-        <input type="checkbox" ng-model="item.isComplete">
+        <input type="checkbox" ng-model="item.isComplete" ng-click="list.updateItem(item);">
         {{ item.text }}
       </label>
       <button class="pr" ng-click="list.removeItem(item);">x</button>
