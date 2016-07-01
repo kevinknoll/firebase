@@ -69,6 +69,7 @@
         }
 
         function logout () {
+          // TODO: log user out instead of deleting (so user id doesn't change)
           return auth.$deleteUser().then(function () {
             user.data = null;
           });
